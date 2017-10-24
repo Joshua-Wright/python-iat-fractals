@@ -1,0 +1,103 @@
+#!/usr/bin/env python3
+import numpy as np
+# import multiprocessing as mp
+import pathos.multiprocessing as mp
+from functools import reduce
+from PIL import Image
+from math import sin, cos
+import shutil
+
+
+def translate(x, y):
+    return np.array([
+        [1, 0, x],
+        [0, 1, y],
+        [0, 0, 1],
+    ])
+
+
+def scale(x, y, a):
+    return np.array([
+        [a, 0, (1 - a) * x],
+        [0, a, (1 - a) * y],
+        [0, 0, 1],
+    ])
+
+
+def rotate(x, y, theta):
+    return np.array([
+        [cos(theta), -sin(theta), x + y * sin(theta) - x * cos(theta)],
+        [sin(theta),
+         cos(theta), y - y * cos(theta) - x * sin(theta)],
+        [0, 0, 1],
+    ])
+
+
+def compose(mats):
+    # reverse because matrix multiplication goes the wrong way
+    return reduce(np.matmul, mats[::-1])
+
+
+def transform_points(x, y, mats, depth):
+    while True:
+        # TODO preallocate array
+        # newx = np.zeros(len(mats) * len(x))
+        # newy = np.zeros(len(mats) * len(y))
+        newx = np.zeros(0)
+        newy = np.zeros(0)
+        for mat in mats:
+            newx = np.append(newx, x * mat[0][0] + y * mat[0][1] + mat[0][2])
+            newy = np.append(newy, x * mat[1][0] + y * mat[1][1] + mat[1][2])
+        if depth == 0:
+            return newx, newy
+        else:
+            depth -= 1
+            x = newx
+            y = newy
+
+
+def rasterize_points(x, y, wd):
+    buf = np.zeros((wd, wd, 3)).astype(np.uint8)
+    # TODO prob not right
+    xi = np.round((x / 2 + 1 / 2) * (wd - 1)).astype(int)
+    yi = np.round((-y / 2 + 1 / 2) * (wd - 1)).astype(int)
+    buf[yi, xi, 0] = 255
+    buf[yi, xi, 1] = 255
+    buf[yi, xi, 2] = 255
+    return buf
+
+
+def render_fractal_np(mats, depth=10, width=800):
+    x, y = transform_points(np.array([0]), np.array([0]), mats, depth)
+    return rasterize_points(x, y, width)
+
+
+def render_fractal(mats, filename, depth=10, width=800):
+    x, y = transform_points(np.array([0]), np.array([0]), mats, depth)
+    img = Image.fromarray(rasterize_points(x, y, width))
+    img.save(filename)
+    return img
+
+
+class Animation(object):
+    def __init__(self, func):
+        self.func = func
+
+
+    def run(self, filename, n_frames, xmin, xmax, parallel=True, loop=False):
+        def frame(i):
+            x = xmin + (xmax - xmin) * i / n_frames
+            img = self.func(x)
+            img.save(filename % i)
+            print("rendered frame %i" % i)
+        if parallel:
+            p = mp.Pool()
+            p.map(frame, range(n_frames+1))
+        else:
+            map(frame, range(n_frames+1))
+        if loop:
+            frame(n_frames)
+            for i in range(1, n_frames+1):
+                i0 = n_frames - i
+                i1 = n_frames + i
+                shutil.copy(filename % i0, filename % i1)
