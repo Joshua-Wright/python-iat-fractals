@@ -6,6 +6,7 @@ from functools import reduce
 from PIL import Image
 from math import sin, cos
 import shutil
+import numba
 
 
 def translate(x, y):
@@ -83,21 +84,40 @@ class Animation(object):
     def __init__(self, func):
         self.func = func
 
-
     def run(self, filename, n_frames, xmin, xmax, parallel=True, loop=False):
         def frame(i):
             x = xmin + (xmax - xmin) * i / n_frames
             img = self.func(x)
             img.save(filename % i)
             print("rendered frame %i" % i)
+
         if parallel:
             p = mp.Pool()
-            p.map(frame, range(n_frames+1))
+            p.map(frame, range(n_frames + 1))
         else:
-            map(frame, range(n_frames+1))
+            map(frame, range(n_frames + 1))
         if loop:
             frame(n_frames)
-            for i in range(1, n_frames+1):
+            for i in range(1, n_frames + 1):
                 i0 = n_frames - i
                 i1 = n_frames + i
                 shutil.copy(filename % i0, filename % i1)
+
+
+@numba.jit(nopython=True, nogil=True, parallel=True)
+def flood_fill(buf, x, y, to_replace, new_val):
+    """
+    buf: RGB numpy array
+    to_replace, new_val: tuple of (r,g,b)
+    """
+    points = [(int(x), int(y))]
+    while points:
+        x, y = points.pop()
+        for newpoint in [(x - 1, y), (x + 1, y), (x, y - 1), (x, y + 1)]:
+            if x < 0 or y < 0 or x >= len(buf) or y >= len(buf):
+                continue
+            if buf[newpoint][0] == to_replace[0] and \
+               buf[newpoint][1] == to_replace[1] and \
+               buf[newpoint][2] == to_replace[2]:
+                points.append(newpoint)
+                buf[newpoint] = new_val
