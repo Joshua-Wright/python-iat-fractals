@@ -76,26 +76,28 @@ def render_square(theta):
     arr = sum([render_fractal_np(m, width=600) for m in curves])
     img = Image.fromarray(arr)
     return img
-    # img.save("koch_squares/koch_square_%10f.png" % theta)
 
 
-width = 600
-curves = [
-    koch_curve(*(x + [pi / 2 * 0.92]))
-    for x in (sides_pointing_out + sides_pointing_in)
-]
-arr = sum([render_fractal_np(m, width=width) for m in curves])
-flood_points = [
-    # (int(width / 2), int(width / 2)),
-    (0, 0),
-    (0, width - 3),
-    (width - 3, 0),
-    (width - 3, width - 3),
-]
-for x, y in flood_points:
-    flood_fill(arr, x, y, (0, 0, 0), (255, 255, 255))
-img = Image.fromarray(arr)
-img.save("koch_flake.png")
+mats = koch_curve(-1, -1, 1, -1, 85 * pi / 180)
+render_fractal(mats, "von_koch_curve.png", width=3840 * 2, depth=12)
+
+# width = 600
+# curves = [
+#     koch_curve(*(x + [pi / 2 * 0.92]))
+#     for x in (sides_pointing_out + sides_pointing_in)
+# ]
+# arr = sum([render_fractal_np(m, width=width) for m in curves])
+# flood_points = [
+#     # (int(width / 2), int(width / 2)),
+#     (0, 0),
+#     (0, width - 3),
+#     (width - 3, 0),
+#     (width - 3, width - 3),
+# ]
+# for x, y in flood_points:
+#     flood_fill(arr, x, y, (0, 0, 0), (255, 255, 255))
+# img = Image.fromarray(arr)
+# img.save("koch_flake.png")
 
 # render_square.run(
 #     "koch_squares/koch_square_%06i.png", 100, -pi / 2, pi / 2, loop=True)

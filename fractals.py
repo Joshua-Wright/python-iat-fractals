@@ -121,3 +121,7 @@ def flood_fill(buf, x, y, to_replace, new_val):
                buf[newpoint][2] == to_replace[2]:
                 points.append(newpoint)
                 buf[newpoint] = new_val
+
+
+def invert_colors(array):
+    return 255 - array
