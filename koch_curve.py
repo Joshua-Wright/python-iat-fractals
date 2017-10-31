@@ -12,7 +12,6 @@ def koch_curve(x1, y1, x2, y2, theta=pi / 3):
     mats = []
     denom = 2 + 2 * cos(theta)
     mats.append(scale(x1, y1, 1 / denom))
-    mats.append(scale(x2, y2, 1 / denom))
     mats.append(
         compose([
             scale(x1, y1, 1 / denom),
@@ -25,6 +24,7 @@ def koch_curve(x1, y1, x2, y2, theta=pi / 3):
             rotate(x2, y2, -theta),
             translate((x1 - x2) / denom, (y1 - y2) / denom),
         ]))
+    mats.append(scale(x2, y2, 1 / denom))
     return mats
 
 
