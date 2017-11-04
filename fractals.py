@@ -58,8 +58,14 @@ def transform_points(x, y, mats, depth):
 
 
 def rasterize_points(x, y, wd):
+    # xmin, xmax, ymin, ymax
+    bounds = (-1, 1, -1, 1)
     buf = np.zeros((wd, wd, 3)).astype(np.uint8)
-    # TODO prob not right
+    inside = np.logical_and(
+        np.logical_and(x > bounds[0], x < bounds[1]),
+        np.logical_and(y > bounds[2], y < bounds[3]))
+    x = x[inside]
+    y = y[inside]
     xi = np.round((x / 2 + 1 / 2) * (wd - 1)).astype(int)
     yi = np.round((-y / 2 + 1 / 2) * (wd - 1)).astype(int)
     buf[yi, xi, 0] = 255
