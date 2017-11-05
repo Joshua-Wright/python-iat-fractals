@@ -57,31 +57,32 @@ def transform_points(x, y, mats, depth):
             y = newy
 
 
-def rasterize_points(x, y, wd):
-    # xmin, xmax, ymin, ymax
-    bounds = (-1, 1, -1, 1)
+def rasterize_points(x, y, wd, bounds=(-1, 1, -1, 1)):
+    # bounds is xmin, xmax, ymin, ymax
+    xmin, xmax, ymin, ymax = bounds
     buf = np.zeros((wd, wd, 3)).astype(np.uint8)
     inside = np.logical_and(
-        np.logical_and(x > bounds[0], x < bounds[1]),
-        np.logical_and(y > bounds[2], y < bounds[3]))
+        np.logical_and(x >= xmin, x <= xmax),
+        #
+        np.logical_and(y >= ymin, y <= ymax))
     x = x[inside]
     y = y[inside]
-    xi = np.round((x / 2 + 1 / 2) * (wd - 1)).astype(int)
-    yi = np.round((-y / 2 + 1 / 2) * (wd - 1)).astype(int)
+    xi = np.round((x - xmin) / (xmax - xmin) * (wd - 1)).astype(int)
+    yi = np.round(wd - 1 - (y - ymin) / (ymax - ymin) * (wd - 1)).astype(int)
     buf[yi, xi, 0] = 255
     buf[yi, xi, 1] = 255
     buf[yi, xi, 2] = 255
     return buf
 
 
-def render_fractal_np(mats, depth=10, width=800):
+def render_fractal_np(mats, depth=10, width=800, bounds=(-1, 1, -1, 1)):
     x, y = transform_points(np.array([0]), np.array([0]), mats, depth)
-    return rasterize_points(x, y, width)
+    return rasterize_points(x, y, width, bounds=bounds)
 
 
-def render_fractal(mats, filename, depth=10, width=800):
+def render_fractal(mats, filename, bounds=(-1, 1, -1, 1), depth=10, width=800):
     x, y = transform_points(np.array([0]), np.array([0]), mats, depth)
-    img = Image.fromarray(rasterize_points(x, y, width))
+    img = Image.fromarray(rasterize_points(x, y, width, bounds=bounds))
     img.save(filename)
     return img
 
@@ -130,4 +131,5 @@ def flood_fill(buf, x, y, to_replace, new_val):
 
 
 def invert_colors(array):
+    # TODO handle Image in addition to array
     return 255 - array

@@ -44,13 +44,11 @@ mats = [
     ]),
 ]
 
-width = 3840 * 2
-x, y = transform_points(np.array([0]), np.array([0]), mats, 25)
-# x /= 1.5
-# y /= 1.5
-x -= 0.25
-array = rasterize_points(x, y, width)
-# array = render_fractal_np(mats, width=3840 * 2, depth=20)
+# width = 3840 * 2
+width = 1000
+xmid = 0.4
+array = render_fractal_np(
+    mats, width=width, depth=20, bounds=(xmid - 1, xmid + 1, -1, 1))
 array = invert_colors(array)
 img = Image.fromarray(array)
 img.save("golden_dragon.png")
