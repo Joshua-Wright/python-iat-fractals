@@ -1,0 +1,11 @@
+dill==0.2.7.1
+llvmlite==0.20.0
+multiprocess==0.70.5
+numba==0.35.0
+numpy==1.13.3
+olefile==0.44
+pathos==0.2.1
+Pillow==4.3.0
+pox==0.2.3
+ppft==1.6.4.7.1
+six==1.11.0

@@ -6,6 +6,7 @@ from fractals import flood_fill
 from fractals import invert_colors
 from fractals import transform_points
 from fractals import rasterize_points
+import fractals as f
 from PIL import Image
 import numpy as np
 from math import sin, cos, pi
@@ -45,10 +46,36 @@ mats = [
 ]
 
 # width = 3840 * 2
+# # width = 1000
+# xmid = 0.4
+# ymid = 0
+# dw = 0.75
+# array = render_fractal_np(
+#     mats,
+#     width=width,
+#     depth=26,
+#     bounds=(xmid - dw, xmid + dw, ymid - dw, ymid + dw))
+# array = invert_colors(array)
+# img = Image.fromarray(array)
+# img.save("golden_dragon.png")
+
 width = 1000
 xmid = 0.4
-array = render_fractal_np(
-    mats, width=width, depth=20, bounds=(xmid - 1, xmid + 1, -1, 1))
-array = invert_colors(array)
-img = Image.fromarray(array)
-img.save("golden_dragon.png")
+ymid = 0
+dw = 0.75
+bounds = (xmid - dw, xmid + dw, ymid - dw, ymid + dw)
+depth = 13
+# array = render_fractal_np(
+#     mats,
+#     width=width,
+#     bounds=(xmid - dw, xmid + dw, ymid - dw, ymid + dw))
+x, y = transform_points(np.array([0]), np.array([0]), mats, depth)
+x, y = f.re_range_points(x, y, width, bounds)
+distances = f.distance_grid(x, y, width)
+# distances /= (np.max(distances) + 1)
+# distances *= 255
+# distances = (255 - distances).astype(np.uint8)
+distances *= 3
+distances = distances.astype(np.uint8)
+img = Image.fromarray(distances)
+img.save("golden_dragon_dist.png")

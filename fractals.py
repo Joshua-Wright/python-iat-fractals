@@ -57,18 +57,26 @@ def transform_points(x, y, mats, depth):
             y = newy
 
 
-def rasterize_points(x, y, wd, bounds=(-1, 1, -1, 1)):
+def re_range_points(x, y, wd, bounds):
     # bounds is xmin, xmax, ymin, ymax
     xmin, xmax, ymin, ymax = bounds
-    buf = np.zeros((wd, wd, 3)).astype(np.uint8)
     inside = np.logical_and(
         np.logical_and(x >= xmin, x <= xmax),
         #
         np.logical_and(y >= ymin, y <= ymax))
-    x = x[inside]
-    y = y[inside]
-    xi = np.round((x - xmin) / (xmax - xmin) * (wd - 1)).astype(int)
-    yi = np.round(wd - 1 - (y - ymin) / (ymax - ymin) * (wd - 1)).astype(int)
+    # use float32 to reduce memory usage
+    x = x[inside].astype(np.float32)
+    y = y[inside].astype(np.float32)
+    xi = np.round((x - xmin) / (xmax - xmin) * (wd - 1)).astype(np.uint32)
+    yi = np.round(wd - 1 - (y - ymin) / (ymax - ymin) * (wd - 1)).astype(
+        np.uint32)
+    return xi, yi
+
+
+def rasterize_points(x, y, wd, bounds=(-1, 1, -1, 1)):
+    # bounds is xmin, xmax, ymin, ymax
+    buf = np.zeros((wd, wd, 3)).astype(np.uint8)
+    xi, yi = re_range_points(x, y, wd, bounds)
     buf[yi, xi, 0] = 255
     buf[yi, xi, 1] = 255
     buf[yi, xi, 2] = 255
@@ -124,8 +132,8 @@ def flood_fill(buf, x, y, to_replace, new_val):
             if x < 0 or y < 0 or x >= len(buf) or y >= len(buf):
                 continue
             if buf[newpoint][0] == to_replace[0] and \
-               buf[newpoint][1] == to_replace[1] and \
-               buf[newpoint][2] == to_replace[2]:
+                            buf[newpoint][1] == to_replace[1] and \
+                            buf[newpoint][2] == to_replace[2]:
                 points.append(newpoint)
                 buf[newpoint] = new_val
 
@@ -133,3 +141,18 @@ def flood_fill(buf, x, y, to_replace, new_val):
 def invert_colors(array):
     # TODO handle Image in addition to array
     return 255 - array
+
+
+@numba.jit(nopython=True, nogil=True, parallel=True)
+def _dist_helper(x, xi, y, yi):
+    return np.sqrt((x - xi)**2 + (y - yi)**2)
+
+
+def distance_grid(xs, ys, width):
+    xi, yi = np.mgrid[1:width, 1:width]
+    distances = np.zeros_like(xi) + width
+    for i, (x, y) in enumerate(zip(xs, ys)):
+        distances = np.minimum(distances, _dist_helper(x, xi, y, yi))
+        if i % 100 == 0:
+            print("%i/%i" % (i, len(xs)))
+    return distances
